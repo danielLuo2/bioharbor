@@ -84,7 +84,10 @@ class Harbor:
 
     def _portable(self, path: Path) -> str:
         path = path.resolve()  # `workdir / absolute` already yields the absolute path
-        return str(path.relative_to(self.home)) if path.is_relative_to(self.home) else str(path)
+        if not path.is_relative_to(self.home):
+            return str(path)
+        # Forward slashes on every OS, so agents see the same paths everywhere.
+        return path.relative_to(self.home).as_posix()
 
     def resolve_file(self, rel: str) -> Path:
         """Map a path returned in `files` back to disk, refusing anything outside home."""

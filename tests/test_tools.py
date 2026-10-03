@@ -20,6 +20,7 @@ def test_seq_stats_many_records_go_to_file(harbor):
     res = ok(harbor.run("seq_stats", {"sequence": fasta}))
     assert res["summary"]["truncated"] is True
     assert len(res["summary"]["records"]) == 20
+    assert res["files"][0].startswith("jobs/") and "\\" not in res["files"][0]
     path = harbor.resolve_file(res["files"][0])
     assert path.read_text().count("\n") == 31
 
