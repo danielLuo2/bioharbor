@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.python-version
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secrets — never commit tokens, keys or server addresses
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.pypirc
+secrets/
+
+# BioHarbor runtime data (workspaces, job DB, caches, downloaded databases/weights)
+.bioharbor/
+bioharbor-data/
+*.sqlite
+*.sqlite3
+*.db
+
+# Large bio data files — keep them out of git (use tests/data for tiny fixtures)
+*.h5ad
+*.bam
+*.cram
+*.fastq
+*.fastq.gz
+*.fq.gz
+*.pt
+*.ckpt
+*.safetensors
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
