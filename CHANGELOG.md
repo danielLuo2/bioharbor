@@ -14,6 +14,12 @@ versioning: [SemVer](https://semver.org/).
 ### Changed
 - `bioharbor tools list` truncates descriptions to the terminal width.
 - `find_orfs` suggests the follow-up tools that now exist.
+- Each tool's description starts with a one-line summary, so `tools list` fits a terminal.
+
+### Fixed
+- Loading ESMFold no longer prints transformers' LOAD REPORT / hub notices, and nothing
+  printed during loading can reach stdout, which carries the MCP stream under `serve`.
+- Output file paths use forward slashes on Windows too.
 
 ## [0.1.0] - 2026-10-03
 

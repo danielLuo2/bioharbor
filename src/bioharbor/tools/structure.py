@@ -6,9 +6,11 @@ Install the model dependencies with ``pip install 'bioharbor[esmfold]'``. Weight
 
 from __future__ import annotations
 
+import contextlib
+import sys
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -58,6 +60,35 @@ _infer_locks: dict[str, threading.Lock] = {}
 _load_seconds: dict[str, float] = {}  # set when a model is (re)loaded, popped by the tool
 
 
+@contextlib.contextmanager
+def _quiet_loading() -> Iterator[None]:
+    """Silence library chatter while loading weights.
+
+    transformers prints a LOAD REPORT (e.g. ESM-2's unused contact head reported as
+    MISSING) and hub connectivity notices. Under `bioharbor serve` stdout carries the MCP
+    JSON-RPC stream, so nothing may be printed there: route stray prints to stderr and
+    keep only errors from the libraries' loggers.
+    """
+    import transformers
+
+    previous = transformers.logging.get_verbosity()
+    transformers.logging.set_verbosity_error()
+    try:
+        from huggingface_hub.utils import logging as hub_logging
+
+        hub_previous = hub_logging.get_verbosity()
+        hub_logging.set_verbosity_error()
+    except ImportError:  # pragma: no cover - hub always ships with transformers
+        hub_logging, hub_previous = None, None
+    try:
+        with contextlib.redirect_stdout(sys.stderr):
+            yield
+    finally:
+        transformers.logging.set_verbosity(previous)
+        if hub_logging is not None:
+            hub_logging.set_verbosity(hub_previous)
+
+
 def _load(device: str) -> Any:
     with _model_lock:
         if device not in _models:
@@ -70,7 +101,8 @@ def _load(device: str) -> Any:
                     "ESMFold dependencies are not installed",
                     hint="ask the user to run `pip install 'bioharbor[esmfold]'`",
                 ) from exc
-            model = EsmForProteinFolding.from_pretrained(MODEL_ID).eval()
+            with _quiet_loading():
+                model = EsmForProteinFolding.from_pretrained(MODEL_ID).eval()
             if device.startswith("cuda"):
                 model.esm = model.esm.half()  # halves the 3B language model's footprint
                 torch.backends.cuda.matmul.allow_tf32 = True
@@ -190,9 +222,10 @@ def _precheck(params: PredictStructureParams, home: Path) -> None:
     ),
 )
 def predict_structure(params: PredictStructureParams, ctx: RunContext) -> ToolResult:
-    """Predict 3D protein structure(s) with ESMFold on a GPU. Returns per-protein mean
-    pLDDT, confidence bands, low-confidence regions and pTM; PDB files are written to
-    disk (B-factor column = pLDDT)."""
+    """Predict 3D protein structure with ESMFold on a GPU.
+
+    Returns per-protein mean pLDDT, confidence bands, low-confidence regions and pTM; PDB
+    files are written to disk (B-factor column = pLDDT)."""
     records = _check(params)
     device = f"cuda:{ctx.gpu_index}" if ctx.gpu_index is not None else "cpu"
 

@@ -16,7 +16,7 @@ Priorities follow user feedback — open an issue if something matters to you.
 - [x] Validate ESMFold on RTX 5090 (smoke test, GPU placement, Swiss-Prot search)
 - [ ] Calibrate the ESMFold memory estimate across lengths (needs a free 5090)
 - [x] PyPI release via trusted publishing (v0.1.0)
-- [ ] Demo GIF in the README
+- [x] Demo GIF in the README (scripted with VHS)
 
 ## v0.2 — reliability
 - [ ] Content-addressed result cache

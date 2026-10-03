@@ -148,9 +148,11 @@ def _precheck(params: SearchHomologsParams, home: Path) -> None:
 
 @tool(version="1", slow=True, resources=Resources(timeout_s=6 * 3600), precheck=_precheck)
 def search_homologs(params: SearchHomologsParams, ctx: RunContext) -> ToolResult:
-    """Find homologous proteins with MMseqs2 against a local database (default Swiss-Prot).
-    Returns the best hits per query with identity, E-value, coverage, organism and
-    description; the full hit table is written to a TSV file."""
+    """Find homologous proteins with MMseqs2 (Swiss-Prot, PDB, ...).
+
+    Searches a local database (default Swiss-Prot). Returns the best hits per query with
+    identity, E-value, coverage, organism and description; the full hit table is written
+    to a TSV file."""
     records, kinds = _check_queries(params)
     mmseqs = require_binary("mmseqs", INSTALL_MMSEQS)
     assert ctx.home is not None

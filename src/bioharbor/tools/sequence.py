@@ -21,8 +21,10 @@ class SeqStatsParams(BaseModel):
 
 @tool(version="1")
 def seq_stats(params: SeqStatsParams, ctx: RunContext) -> ToolResult:
-    """Validate sequences and report type (dna/rna/protein), length, GC content,
-    molecular weight and composition. A cheap first step before heavier tools."""
+    """Validate sequences: type, length, GC%, molecular weight.
+
+    Reports dna/rna/protein type, length, GC content (nucleotides) or molecular weight
+    (proteins) and composition. A cheap first step before heavier tools."""
     records = parse_sequences(params.sequence)
     rows = []
     for rec in records:
@@ -72,8 +74,9 @@ class TranslateParams(BaseModel):
 
 @tool(version="1")
 def translate_sequence(params: TranslateParams, ctx: RunContext) -> ToolResult:
-    """Translate DNA/RNA to protein using the standard genetic code, in one frame or
-    all six. Stop codons appear as '*'."""
+    """Translate DNA/RNA to protein, in one frame or all six.
+
+    Uses the standard genetic code; stop codons appear as '*'."""
     records = parse_sequences(params.sequence)
     frames = [1, 2, 3, -1, -2, -3] if params.frame == "all" else [params.frame]
     out = []
@@ -117,8 +120,10 @@ class FindOrfsParams(BaseModel):
 
 @tool(version="1")
 def find_orfs(params: FindOrfsParams, ctx: RunContext) -> ToolResult:
-    """Find open reading frames (ATG to stop) in DNA/RNA. Returns the longest ORFs with
-    coordinates (1-based, on the forward strand) and writes all ORFs to a FASTA file."""
+    """Find open reading frames (ATG to stop) on both strands.
+
+    Returns the longest ORFs in DNA/RNA with coordinates (1-based, on the forward strand)
+    and writes all ORFs to a FASTA file."""
     records = parse_sequences(params.sequence)
     orfs = []
     for rec in records:
