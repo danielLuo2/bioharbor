@@ -10,9 +10,9 @@
 > (ESMFold, validated on RTX 5090) work. Feedback welcome — see the [roadmap](ROADMAP.md).
 
 BioHarbor is an [MCP](https://modelcontextprotocol.io) server that lets AI agents such as
-Claude *execute* bioinformatics tools — not just look things up. Agents ask for an analysis;
-BioHarbor validates the input, schedules it on a GPU with room, records exactly how it ran,
-and hands back a compact, agent-readable summary.
+Claude, Cursor and Codex *execute* bioinformatics tools — not just look things up. Agents
+ask for an analysis; BioHarbor validates the input, schedules it on a GPU with room, records
+exactly how it ran, and hands back a compact, agent-readable summary.
 
 ![BioHarbor demo](docs/demo/demo.gif)
 
@@ -36,19 +36,27 @@ complements them by running the **compute**:
 pip install bioharbor
 bioharbor doctor             # checks Python, GPUs, workspace, tools
 bioharbor setup-db swissprot # reference database for search_homologs (needs MMseqs2)
-bioharbor install-claude     # prints the config for Claude Desktop / Claude Code
+bioharbor install            # shows how to connect Claude, Cursor or Codex
 ```
 
 For structure prediction on a GPU: `pip install "bioharbor[esmfold]"` — see
 [docs/gpu-setup.md](docs/gpu-setup.md) (RTX 50xx needs a CUDA 12.8+ PyTorch).
 
-Claude Code:
+### Connect your agent
 
-```bash
-claude mcp add bioharbor -- bioharbor serve
-```
+BioHarbor is a standard MCP server, so it works with any MCP client. One command sets up
+the popular ones (it writes an absolute path, so GUI apps find it even outside your venv):
 
-Claude Desktop: `bioharbor install-claude --write`, then restart the app.
+| Client | Set up |
+|---|---|
+| **Claude Code** | `claude mcp add bioharbor -- bioharbor serve` |
+| **Claude Desktop** | `bioharbor install claude-desktop --write`, then restart the app |
+| **Cursor** | `bioharbor install cursor --write`, or [![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=bioharbor&config=eyJjb21tYW5kIjogImJpb2hhcmJvciIsICJhcmdzIjogWyJzZXJ2ZSJdfQ==) |
+| **Codex** (CLI, IDE extension, app) | `codex mcp add bioharbor -- bioharbor serve`, or `bioharbor install codex --write` |
+| Anything else | run `bioharbor serve` (stdio) or `bioharbor serve --http` (Streamable HTTP) |
+
+Long-running tools return a `job_id` within ~20 s instead of blocking, so they stay
+within every client's tool-call timeout.
 
 Then ask your agent something like:
 

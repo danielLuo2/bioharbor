@@ -9,7 +9,7 @@ Priorities follow user feedback — open an issue if something matters to you.
 - [x] Background jobs for slow tools, `get_job` / `cancel_job`, restart recovery
 - [x] GPU discovery (NVML / nvidia-smi), polite placement with reservations
 - [x] Sequence tools: `seq_stats`, `translate_sequence`, `find_orfs`
-- [x] `doctor`, `install-claude`
+- [x] `doctor`, `install` (Claude Code / Claude Desktop / Cursor / Codex)
 - [x] `search_homologs` (MMseqs2) + `bioharbor setup-db swissprot`
 - [x] `predict_structure` (ESMFold) with length-based GPU memory estimate
 - [x] Fail-fast prechecks before queueing

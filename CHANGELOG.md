@@ -6,6 +6,12 @@ versioning: [SemVer](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- `bioharbor install [claude-code|claude-desktop|cursor|codex] [--write]`: shows or writes
+  the config for each client (absolute command path, `.bak` backup, re-running replaces
+  rather than duplicates). Prints a one-click Cursor install link; the Codex entry sets
+  `tool_timeout_sec = 120`. `install-claude` remains as a hidden alias.
+- README: "Connect your agent" table for Claude Code, Claude Desktop, Cursor (Add to
+  Cursor button) and Codex.
 - `bioharbor run --brief`: one status line (time, GPU), the tool's message, suggestions
   and output files instead of raw JSON.
   When a call had to load a model it says so, e.g. `(incl. 145s one-time model load)`.
@@ -14,6 +20,7 @@ versioning: [SemVer](https://semver.org/).
   of the README demo (contig -> ORF -> Swiss-Prot homologs -> ESMFold structure).
 
 ### Changed
+- `get_job` blocks for at most 25 s (was 60) to stay under clients' tool-call timeouts.
 - `bioharbor tools list` truncates descriptions to the terminal width.
 - `find_orfs` suggests the follow-up tools that now exist.
 - Each tool's description starts with a one-line summary, so `tools list` fits a terminal.

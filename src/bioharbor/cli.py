@@ -6,13 +6,12 @@ import json
 import os
 import platform
 import shutil
-import sys
 from pathlib import Path
 from typing import Annotated, Any
 
 import typer
 
-from . import __version__
+from . import __version__, clients
 from . import gpu as gpu_mod
 from .databases import KNOWN_DATABASES, list_databases, setup_database
 from .harbor import Harbor, default_home
@@ -253,7 +252,7 @@ def serve(
     port: int = 8765,
     workers: Annotated[int, typer.Option(help="Concurrent background jobs.")] = 2,
 ) -> None:
-    """Start the MCP server (stdio for Claude Desktop/Code, or --http for shared use)."""
+    """Start the MCP server (stdio for local MCP clients, or --http for shared use)."""
     from .server import build_server
 
     harbor = Harbor(workers=workers, recover=True)
@@ -270,45 +269,66 @@ def serve(
         harbor.close()
 
 
-def _claude_desktop_config() -> Path:
-    system = platform.system()
-    if system == "Darwin":
-        return Path.home() / "Library/Application Support/Claude/claude_desktop_config.json"
-    if system == "Windows":
-        return Path(os.environ.get("APPDATA", Path.home())) / "Claude/claude_desktop_config.json"
-    return Path.home() / ".config/Claude/claude_desktop_config.json"
+def _install_one(name: str, write: bool) -> None:
+    command, args = clients.server_command()
+    cmdline = " ".join([command, *args])
+    if name == "claude-code":
+        typer.echo(f"Claude Code:\n  claude mcp add bioharbor -- {cmdline}")
+        if write:
+            typer.echo("  (run the command above; Claude Code manages its own config)")
+    elif name == "codex":
+        cfg = clients.codex_config_path()
+        if write:
+            clients.write_codex_config(cfg, command, args)
+            typer.echo(f"Codex: added [mcp_servers.bioharbor] to {cfg}. Restart Codex.")
+        else:
+            typer.echo(f"Codex (CLI, IDE extension and app share {cfg}):")
+            typer.echo(f"  codex mcp add bioharbor -- {cmdline}")
+            typer.echo("  or add to config.toml:\n")
+            typer.echo(clients.codex_toml(command, args))
+    else:
+        is_cursor = name == "cursor"
+        cfg = clients.cursor_config_path() if is_cursor else clients.claude_desktop_config_path()
+        label = "Cursor" if is_cursor else "Claude Desktop"
+        if write:
+            clients.write_json_config(cfg, command, args)
+            typer.echo(f"{label}: added bioharbor to {cfg}. Restart {label} to load it.")
+        else:
+            typer.echo(f"{label} ({cfg}):")
+            _print({"mcpServers": {"bioharbor": clients.json_entry(command, args)}})
+            if is_cursor:
+                typer.echo("  one-click install link:\n  " + clients.cursor_deeplink(command, args))
+    typer.echo("")
 
 
-@app.command("install-claude")
-def install_claude(
+@app.command("install")
+def install(
+    client: Annotated[
+        str | None,
+        typer.Argument(help=f"One of: {', '.join(clients.CLIENTS)}. Omit to show all."),
+    ] = None,
     write: Annotated[
-        bool,
-        typer.Option(
-            help="Add BioHarbor to the Claude Desktop config file (a .bak backup is made)."
-        ),
+        bool, typer.Option(help="Write the client's config file (a .bak backup is made).")
     ] = False,
 ) -> None:
-    """Show (or write) the config that connects Claude Desktop / Claude Code to BioHarbor."""
-    exe = shutil.which("bioharbor") or sys.executable
-    args = (
-        ["serve"] if exe.endswith(("bioharbor", "bioharbor.exe")) else ["-m", "bioharbor", "serve"]
-    )
-    entry = {"command": exe, "args": args}
-    typer.echo("Claude Code:\n  claude mcp add bioharbor -- " + " ".join([exe, *args]) + "\n")
-    cfg = _claude_desktop_config()
-    if not write:
-        typer.echo(f"Claude Desktop ({cfg}):")
-        _print({"mcpServers": {"bioharbor": entry}})
-        typer.echo("\nRe-run with --write to add it automatically.")
+    """Connect BioHarbor to Claude Code, Claude Desktop, Cursor or Codex."""
+    if client is None:
+        if write:
+            raise typer.BadParameter("--write needs a client, e.g. `bioharbor install cursor`")
+        for name in clients.CLIENTS:
+            _install_one(name, write=False)
+        typer.echo("Re-run with a client and --write to add it automatically.")
         return
-    data: dict[str, Any] = {}
-    if cfg.exists():
-        data = json.loads(cfg.read_text() or "{}")
-        shutil.copy2(cfg, cfg.with_suffix(".json.bak"))
-    data.setdefault("mcpServers", {})["bioharbor"] = entry
-    cfg.parent.mkdir(parents=True, exist_ok=True)
-    cfg.write_text(json.dumps(data, indent=2))
-    typer.echo(f"Added bioharbor to {cfg}. Restart Claude Desktop to load it.")
+    if client not in clients.CLIENTS:
+        raise typer.BadParameter(f"unknown client {client!r}; choose from {clients.CLIENTS}")
+    _install_one(client, write)
+
+
+@app.command("install-claude", hidden=True)
+def install_claude(write: bool = False) -> None:
+    """Deprecated alias for `bioharbor install claude-desktop`."""
+    _install_one("claude-code", write=False)
+    _install_one("claude-desktop", write)
 
 
 if __name__ == "__main__":

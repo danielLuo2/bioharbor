@@ -68,7 +68,8 @@ def build_server(harbor: Harbor) -> MCPServer:
     async def get_job(
         job_id: Annotated[str, Field(description="Job id returned by a slow tool.")],
         wait_seconds: Annotated[
-            float, Field(ge=0, le=60, description="Block up to this long for the job to finish.")
+            # Capped below the ~30 s tool-call timeout some clients (e.g. Cursor) enforce.
+            float, Field(ge=0, le=25, description="Block up to this long for the job to finish.")
         ] = 0,
     ) -> dict[str, Any]:
         """Status and (when finished) result of a background job."""
