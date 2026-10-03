@@ -14,7 +14,7 @@ Claude *execute* bioinformatics tools — not just look things up. Agents ask fo
 BioHarbor validates the input, schedules it on a GPU with room, records exactly how it ran,
 and hands back a compact, agent-readable summary.
 
-<!-- TODO: demo GIF goes here -->
+![BioHarbor demo](docs/demo/demo.gif)
 
 ## Why another bio MCP server?
 
