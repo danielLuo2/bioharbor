@@ -1,0 +1,5 @@
+# Normalise line endings so Windows checkouts (core.autocrlf) do not show spurious diffs
+* text=auto eol=lf
+*.png binary
+*.gif binary
+*.gz binary
