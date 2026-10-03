@@ -5,6 +5,10 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-03
+
+First usable release.
+
 ### Added
 - MCP server (stdio and Streamable HTTP) exposing all registered tools with flat input
   schemas, plus `get_job`, `list_jobs`, `cancel_job`, `describe_tool`, `gpu_status` and

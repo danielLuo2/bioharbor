@@ -6,8 +6,8 @@
 [![PyPI](https://img.shields.io/pypi/v/bioharbor)](https://pypi.org/project/bioharbor/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-> 🚧 **Pre-alpha.** Homology search (MMseqs2) and structure prediction (ESMFold) work;
-> a first release is close. See the [roadmap](ROADMAP.md).
+> 🧪 **Alpha (v0.1).** Sequence tools, homology search (MMseqs2) and structure prediction
+> (ESMFold, validated on RTX 5090) work. Feedback welcome — see the [roadmap](ROADMAP.md).
 
 BioHarbor is an [MCP](https://modelcontextprotocol.io) server that lets AI agents such as
 Claude *execute* bioinformatics tools — not just look things up. Agents ask for an analysis;

@@ -15,10 +15,6 @@ pip install "bioharbor[esmfold]"
 bioharbor doctor
 ```
 
-> **Before v0.1.0 is on PyPI**, replace the `pip install "bioharbor[esmfold]"` line with a source install:
-> `git clone -b feat/homology-structure https://github.com/danielLuo2/bioharbor && cd bioharbor &&
-> pip install -e ".[esmfold]"`
-
 > PyPI mirrors can lag behind: if you see `No matching distribution found for mcp>=2.3`,
 > install with `-i https://pypi.org/simple`.
 

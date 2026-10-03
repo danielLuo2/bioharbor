@@ -12,7 +12,7 @@ license = "Apache-2.0"
 authors = [{ name = "Daniel Luo" }]
 keywords = ["bioinformatics", "mcp", "ai-agents", "gpu", "protein", "genomics"]
 classifiers = [
-  "Development Status :: 2 - Pre-Alpha",
+  "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
   "Programming Language :: Python :: 3",
