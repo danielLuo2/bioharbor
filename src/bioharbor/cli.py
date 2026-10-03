@@ -107,7 +107,14 @@ def tools_list() -> None:
         first_line = spec.description.splitlines()[0] if spec.description else ""
         kind = "job" if spec.slow else "inline"
         gpu = " gpu" if spec.resources.gpu else ""
-        typer.echo(f"{name:<22} [{kind}{gpu}] {first_line}")
+        line = f"{name:<20} [{kind}{gpu}] {first_line}"
+        typer.echo(_fit(line))
+
+
+def _fit(line: str) -> str:
+    """Truncate to the terminal width so lists stay one line per item."""
+    width = shutil.get_terminal_size((120, 24)).columns
+    return line if len(line) <= width else line[: width - 1] + "…"
 
 
 @tools_app.command("describe")
@@ -142,6 +149,9 @@ def run(
         typer.Argument(help="key=value pairs; key=@path reads a file (e.g. sequence=@query.fa)"),
     ] = None,
     wait: Annotated[float, typer.Option(help="Seconds to wait for slow tools.")] = 3600,
+    brief: Annotated[
+        bool, typer.Option("--brief", "-b", help="Human-readable summary instead of JSON.")
+    ] = False,
 ) -> None:
     """Run a tool exactly as an agent would, and print the JSON result."""
     harbor = Harbor()
@@ -152,8 +162,35 @@ def run(
         raise typer.Exit(2) from exc
     finally:
         harbor.close()
-    _print(result)
+    if brief:
+        typer.echo(format_brief(result))
+    else:
+        _print(result)
     raise typer.Exit(1 if result.get("status") == "failed" else 0)
+
+
+def format_brief(out: dict[str, Any]) -> str:
+    """One status line, the tool's message, then suggestions and output files."""
+    status = out.get("status", "?")
+    mark = {"succeeded": "✓", "failed": "✗"}.get(status, "…")
+    head = f"{mark} {out.get('tool', '')} {status}"
+    if "duration_s" in out:
+        d = out["duration_s"]
+        head += f" in {d * 1000:.0f} ms" if d < 1 else f" in {d:.1f}s"
+    if out.get("gpu") is not None:
+        head += f" on GPU {out['gpu']}"
+    lines = [head]
+    if err := out.get("error"):
+        lines.append(f"  {err.get('message')}")
+        if err.get("hint"):
+            lines.append(f"  hint: {err['hint']}")
+    if res := out.get("result"):
+        lines.append(f"  {res.get('message', '')}")
+        lines += [f"  → {s}" for s in res.get("suggestions", [])]
+        lines += [f"  file: {f}" for f in res.get("files", [])]
+    if out.get("hint"):
+        lines.append(f"  {out['hint']}")
+    return "\n".join(lines)
 
 
 @app.command()

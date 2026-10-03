@@ -76,3 +76,14 @@ def test_resolve_file_refuses_escape(harbor):
 
     with pytest.raises(InputValidationError):
         harbor.resolve_file("../../etc/passwd")
+
+
+def test_brief_output(harbor):
+    from bioharbor.cli import format_brief
+
+    ok_out = harbor.run("find_orfs", {"sequence": ORF})
+    text = format_brief(ok_out)
+    assert text.startswith("✓ find_orfs succeeded in ")
+    assert "longest is 61 aa" in text and "file: jobs/" in text
+    bad = format_brief(harbor.run("seq_stats", {"sequence": "AC$GT"}))
+    assert bad.startswith("✗ seq_stats failed") and "hint:" in bad

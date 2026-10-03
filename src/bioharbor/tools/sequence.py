@@ -166,7 +166,7 @@ def find_orfs(params: FindOrfsParams, ctx: RunContext) -> ToolResult:
     ]
     suggestions = []
     if orfs:
-        suggestions.append("run seq_stats or (soon) predict_structure on the longest ORF protein")
+        suggestions.append("run search_homologs or predict_structure on the longest ORF protein")
     else:
         suggestions.append(f"no ORFs ≥ {params.min_aa} aa; try a lower min_aa")
     return ToolResult(

@@ -61,7 +61,7 @@ Every tool is also a CLI command, with identical behaviour:
 
 ```bash
 bioharbor tools list
-bioharbor run find_orfs sequence=@contig.fa min_aa=100
+bioharbor run find_orfs sequence=@contig.fa min_aa=100 --brief   # human-readable
 bioharbor run seq_stats sequence=MKTAYIAKQRQISFVKSHFSRQ
 bioharbor jobs
 ```

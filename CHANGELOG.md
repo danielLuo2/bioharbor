@@ -5,6 +5,16 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `bioharbor run --brief`: one status line (time, GPU), the tool's message, suggestions
+  and output files instead of raw JSON.
+- `docs/demo/demo.tape`: scripted [VHS](https://github.com/charmbracelet/vhs) recording
+  of the README demo (contig -> ORF -> Swiss-Prot homologs -> ESMFold structure).
+
+### Changed
+- `bioharbor tools list` truncates descriptions to the terminal width.
+- `find_orfs` suggests the follow-up tools that now exist.
+
 ## [0.1.0] - 2026-10-03
 
 First usable release.
