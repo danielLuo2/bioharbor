@@ -8,6 +8,8 @@ versioning: [SemVer](https://semver.org/).
 ### Added
 - `bioharbor run --brief`: one status line (time, GPU), the tool's message, suggestions
   and output files instead of raw JSON.
+  When a call had to load a model it says so, e.g. `(incl. 145s one-time model load)`.
+- `predict_structure` reports `model_load_s` in its summary (0 when the model was warm).
 - `docs/demo/demo.tape`: scripted [VHS](https://github.com/charmbracelet/vhs) recording
   of the README demo (contig -> ORF -> Swiss-Prot homologs -> ESMFold structure).
 

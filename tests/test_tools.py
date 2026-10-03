@@ -88,3 +88,24 @@ def test_brief_output(harbor):
     assert "longest is 61 aa" in text and "file: jobs/" in text
     bad = format_brief(harbor.run("seq_stats", {"sequence": "AC$GT"}))
     assert bad.startswith("✗ seq_stats failed") and "hint:" in bad
+
+
+def test_brief_mentions_model_load_only_when_it_happened():
+    from bioharbor.cli import format_brief
+
+    def out(load_s):
+        return {
+            "tool": "predict_structure",
+            "status": "succeeded",
+            "duration_s": 148.9,
+            "gpu": 0,
+            "result": {"message": "ok", "summary": {"model_load_s": load_s}},
+        }
+
+    cold = format_brief(out(145.2)).splitlines()[0]
+    assert cold == (
+        "✓ predict_structure succeeded in 148.9s on GPU 0 "
+        "(incl. 145s one-time model load; stays loaded under serve)"
+    )
+    assert "model load" not in format_brief(out(0.0))
+    assert "model load" not in format_brief(out(0.4))

@@ -83,6 +83,7 @@ def test_predict_structure_end_to_end(gpu_harbor):
     assert any("disordered" in x for x in out["result"]["suggestions"])
     prov = json.loads((gpu_harbor.home / f"jobs/{out['job_id']}/provenance.json").read_text())
     assert prov["model_load_s"] == 0.0 and len(prov["inference_s"]) == 1
+    assert out["result"]["summary"]["model_load_s"] == 0.0
 
 
 @pytest.mark.parametrize(

@@ -271,7 +271,9 @@ def predict_structure(params: PredictStructureParams, ctx: RunContext) -> ToolRe
         suggestions.append("run search_homologs: close homologs may have solved structures")
     first = results[0]
     return ToolResult(
-        summary={"structures": results},
+        # Non-zero only when this call loaded the model; later calls in the same server
+        # process reuse it, which tells the agent the next prediction will be fast.
+        summary={"structures": results, "model_load_s": round(model_load_s, 1)},
         message=f"predicted {len(results)} structure(s); {first['id']}: mean pLDDT "
         f"{first['mean_plddt']} ({first['interpretation']})",
         files=files,

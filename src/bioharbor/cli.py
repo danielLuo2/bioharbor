@@ -179,6 +179,9 @@ def format_brief(out: dict[str, Any]) -> str:
         head += f" in {d * 1000:.0f} ms" if d < 1 else f" in {d:.1f}s"
     if out.get("gpu") is not None:
         head += f" on GPU {out['gpu']}"
+    load_s = ((out.get("result") or {}).get("summary") or {}).get("model_load_s") or 0
+    if load_s >= 1:
+        head += f" (incl. {load_s:.0f}s one-time model load; stays loaded under serve)"
     lines = [head]
     if err := out.get("error"):
         lines.append(f"  {err.get('message')}")
