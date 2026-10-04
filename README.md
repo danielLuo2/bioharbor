@@ -56,7 +56,8 @@ the popular ones (it writes an absolute path, so GUI apps find it even outside y
 | Anything else | run `bioharbor serve` (stdio) or `bioharbor serve --http` (Streamable HTTP) |
 
 Long-running tools return a `job_id` within ~20 s instead of blocking, so they stay
-within every client's tool-call timeout.
+within every client's tool-call timeout. Step-by-step setup (local or on a GPU server,
+with troubleshooting): [docs/connect-clients.md](docs/connect-clients.md).
 
 Then ask your agent something like:
 
@@ -76,14 +77,18 @@ bioharbor jobs
 
 ### Shared GPU server
 
-Run one BioHarbor on the lab GPU box and point everyone's agent at it:
+GPUs on a lab server, agent on your laptop? Run BioHarbor on the server and reach it
+through an SSH tunnel; no extra port is opened on the server:
 
 ```bash
-bioharbor serve --http --host 0.0.0.0 --port 8765   # MCP endpoint: http://<host>:8765/mcp
+# on the GPU server
+bioharbor serve --http --host 127.0.0.1 --port 8765
+# on your laptop, then point Cursor / Codex / Claude Code at http://127.0.0.1:8765/mcp
+ssh -N -L 8765:127.0.0.1:8765 you@gpu-server
 ```
 
-> ⚠️ Authentication for HTTP mode is on the roadmap; until then expose it only on a
-> trusted network or behind an SSH tunnel.
+> ⚠️ HTTP mode has no authentication yet (on the roadmap), so keep it on `127.0.0.1` and
+> use the tunnel. Details: [docs/connect-clients.md](docs/connect-clients.md#mode-c-a-gpu-server-through-an-ssh-tunnel).
 
 ## Tools
 

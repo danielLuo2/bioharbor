@@ -10,6 +10,8 @@ versioning: [SemVer](https://semver.org/).
   the config for each client (absolute command path, `.bak` backup, re-running replaces
   rather than duplicates). Prints a one-click Cursor install link; the Codex entry sets
   `tool_timeout_sec = 120`. `install-claude` remains as a hidden alias.
+- `docs/connect-clients.md`: setting up Cursor, Codex and Claude locally (stdio or HTTP)
+  or against a GPU server through an SSH tunnel, with checks and troubleshooting.
 - README: "Connect your agent" table for Claude Code, Claude Desktop, Cursor (Add to
   Cursor button) and Codex.
 - `bioharbor run --brief`: one status line (time, GPU), the tool's message, suggestions
