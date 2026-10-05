@@ -70,3 +70,22 @@ def test_install_cli_shows_every_client_and_writes_cursor(tmp_path, monkeypatch)
     assert wrote.exit_code == 0, wrote.output
     assert "bioharbor" in json.loads((tmp_path / ".cursor" / "mcp.json").read_text())["mcpServers"]
     assert runner.invoke(app, ["install", "vim"]).exit_code != 0
+
+
+def test_claude_desktop_prefers_microsoft_store_location(tmp_path, monkeypatch):
+    monkeypatch.setenv("APPDATA", str(tmp_path / "Roaming"))
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "Local"))
+    classic = tmp_path / "Roaming" / "Claude" / "claude_desktop_config.json"
+    assert clients.claude_desktop_config_path("Windows") == classic
+
+    store = tmp_path / "Local/Packages/Claude_pzs8sxrjxfjjc/LocalCache/Roaming/Claude"
+    store.mkdir(parents=True)
+    assert clients.claude_desktop_config_path("Windows") == store / "claude_desktop_config.json"
+
+
+def test_json_config_tolerates_utf8_bom(tmp_path):
+    cfg = tmp_path / "claude_desktop_config.json"
+    cfg.write_bytes(b'\xef\xbb\xbf{"preferences": {"x": 1}}')
+    clients.write_json_config(cfg, "bioharbor", ["serve"])
+    data = json.loads(cfg.read_text(encoding="utf-8"))
+    assert data["preferences"] == {"x": 1} and "bioharbor" in data["mcpServers"]

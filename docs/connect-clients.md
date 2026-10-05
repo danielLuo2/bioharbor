@@ -98,6 +98,13 @@ A multi-step request works too. Here Codex plans the steps, chains BioHarbor's
 
 ## Troubleshooting
 
+- **Claude Desktop on Windows doesn't show BioHarbor:** the Microsoft Store build reads
+  `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\Claude\claude_desktop_config.json`,
+  not `%APPDATA%\Claude\...`. `bioharbor install claude-desktop --write` (0.1.2+) detects
+  this; with an older version, copy the `bioharbor` entry there by hand. Local MCP servers
+  are listed under *Settings → Developer*, not under *Plugins*. Quit Claude from the system
+  tray (closing the window keeps it running) before reopening.
+
 - **Red dot / `spawn bioharbor ENOENT`** (mode A): the client can't find `bioharbor`. Use
   the absolute path, or run `bioharbor install <client> --write`.
 - **The agent ignores BioHarbor's tools:** some clients cap the total number of tools

@@ -28,11 +28,18 @@ def server_command() -> tuple[str, list[str]]:
     return sys.executable, ["-m", "bioharbor", "serve"]
 
 
-def claude_desktop_config_path() -> Path:
-    system = platform.system()
+def claude_desktop_config_path(system: str | None = None) -> Path:
+    system = system or platform.system()
     if system == "Darwin":
         return Path.home() / "Library/Application Support/Claude/claude_desktop_config.json"
     if system == "Windows":
+        # The Microsoft Store (MSIX) build keeps its data in a virtualised folder and never
+        # reads %APPDATA%\Claude, so prefer that location when the package is installed.
+        local = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+        for package in sorted(local.glob("Packages/Claude_*")):
+            store_dir = package / "LocalCache" / "Roaming" / "Claude"
+            if store_dir.is_dir():
+                return store_dir / "claude_desktop_config.json"
         return Path(os.environ.get("APPDATA", Path.home())) / "Claude/claude_desktop_config.json"
     return Path.home() / ".config/Claude/claude_desktop_config.json"
 
@@ -73,7 +80,7 @@ def write_json_config(path: Path, command: str, args: list[str]) -> None:
     """Add/replace `mcpServers.bioharbor` in a Claude Desktop or Cursor JSON config."""
     data: dict[str, Any] = {}
     if path.exists():
-        data = json.loads(path.read_text(encoding="utf-8") or "{}")
+        data = json.loads(path.read_text(encoding="utf-8-sig") or "{}")
         _backup(path)
     data.setdefault("mcpServers", {})["bioharbor"] = json_entry(command, args)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -85,7 +92,7 @@ _CODEX_SECTION = re.compile(r"^\[mcp_servers\.bioharbor\][^\n]*\n(?:(?!\[)[^\n]*
 
 def write_codex_config(path: Path, command: str, args: list[str]) -> None:
     """Add/replace the `[mcp_servers.bioharbor]` table, leaving the rest untouched."""
-    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    text = path.read_text(encoding="utf-8-sig") if path.exists() else ""
     _backup(path)
     block = codex_toml(command, args)
     if _CODEX_SECTION.search(text):

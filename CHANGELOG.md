@@ -5,6 +5,12 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- `bioharbor install claude-desktop` writes to the Microsoft Store build's config folder
+  (`%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\Claude`) when that build is
+  installed; previously Claude never saw the entry.
+- Config files that start with a UTF-8 BOM are read correctly.
+
 ## [0.1.1] - 2026-10-05
 
 Connect from Cursor and Codex as well as Claude; friendlier CLI output.
