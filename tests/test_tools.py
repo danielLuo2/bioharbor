@@ -60,6 +60,8 @@ def test_find_orfs_both_strands(harbor):
     rc_start = 2 + len(ORF) + 4 + 1
     assert (rev["start"], rev["end"]) == (rc_start, rc_start + len(ORF) - 1)
     assert fwd["length_aa"] == rev["length_aa"] == 61
+    assert fwd["length_nt"] == rev["length_nt"] == len(ORF)  # 61 codons + stop
+    assert res["summary"]["inputs"] == [{"id": "seq1", "length_nt": len(seq)}]
 
 
 def test_runs_are_recorded_with_provenance(harbor):

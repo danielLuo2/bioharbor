@@ -126,8 +126,10 @@ def find_orfs(params: FindOrfsParams, ctx: RunContext) -> ToolResult:
     and writes all ORFs to a FASTA file."""
     records = parse_sequences(params.sequence)
     orfs = []
+    inputs = []
     for rec in records:
         require_type(rec, "dna", "rna")
+        inputs.append({"id": rec.id, "length_nt": len(rec.seq)})
         seq = rec.seq.replace("U", "T")
         n = len(seq)
         strands = [(1, seq)] + ([(-1, reverse_complement(seq))] if params.both_strands else [])
@@ -150,6 +152,7 @@ def find_orfs(params: FindOrfsParams, ctx: RunContext) -> ToolResult:
                                     "strand": "+" if strand == 1 else "-",
                                     "start": lo,
                                     "end": hi,
+                                    "length_nt": hi - lo + 1,  # includes the stop codon
                                     "length_aa": aa_len,
                                     "protein": translate(s[start:i]),
                                 }
@@ -175,7 +178,8 @@ def find_orfs(params: FindOrfsParams, ctx: RunContext) -> ToolResult:
     else:
         suggestions.append(f"no ORFs ≥ {params.min_aa} aa; try a lower min_aa")
     return ToolResult(
-        summary={"n_orfs": len(orfs), "top": top},
+        # Exact input lengths, so agents quote them instead of estimating.
+        summary={"n_orfs": len(orfs), "inputs": inputs[:INLINE_LIMIT], "top": top},
         message=f"found {len(orfs)} ORF(s) ≥ {params.min_aa} aa"
         + (f"; longest is {orfs[0]['length_aa']} aa" if orfs else ""),
         files=[str(path)],

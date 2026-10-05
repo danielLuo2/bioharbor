@@ -7,6 +7,11 @@ versioning: [SemVer](https://semver.org/).
 
 ## [0.1.2] - 2026-10-05
 
+### Added
+- `find_orfs` reports each input's exact length (`inputs[].length_nt`) and each ORF's
+  `length_nt` (including the stop codon), so agents quote real numbers instead of
+  estimating them.
+
 ### Fixed
 - `bioharbor install claude-desktop` writes to the Microsoft Store build's config folder
   (`%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\Claude`) when that build is
