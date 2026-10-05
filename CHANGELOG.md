@@ -5,6 +5,8 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-05
+
 ### Fixed
 - `bioharbor install claude-desktop` writes to the Microsoft Store build's config folder
   (`%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\Claude`) when that build is
