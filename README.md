@@ -58,7 +58,7 @@ the popular ones (it writes an absolute path, so GUI apps find it even outside y
 Long-running tools return a `job_id` within ~20 s instead of blocking, so they stay
 within every client's tool-call timeout.
 
-<img src="docs/images/codex-orf-demo.png" alt="Codex planning the steps and calling BioHarbor's tools on a DNA sequence" width="640">
+<img src="docs/images/codex-orf-demo.png" alt="Codex chaining BioHarbor's find_orfs and seq_stats tools on a DNA sequence" width="640">
 
 Step-by-step setup (local or on a GPU server,
 with troubleshooting): [docs/connect-clients.md](docs/connect-clients.md).

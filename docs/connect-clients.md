@@ -91,10 +91,10 @@ Then ask the agent, for example:
 Clear errors on a machine without MMseqs2 or a GPU are expected: they show the agent
 gets actionable messages instead of a hang.
 
-A multi-step request works too. Here Codex plans the steps, calls BioHarbor's tools and
-reports the ORF and the protein's length and molecular weight:
+A multi-step request works too. Here Codex plans the steps, chains BioHarbor's
+`find_orfs` and `seq_stats`, and reports the ORF and the protein's length and weight:
 
-![Codex planning the steps and calling BioHarbor's tools on a DNA sequence](images/codex-orf-demo.png)
+![Codex chaining BioHarbor's find_orfs and seq_stats tools on a DNA sequence](images/codex-orf-demo.png)
 
 ## Troubleshooting
 
