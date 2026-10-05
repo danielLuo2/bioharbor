@@ -5,6 +5,10 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-05
+
+Connect from Cursor and Codex as well as Claude; friendlier CLI output.
+
 ### Added
 - `bioharbor install [claude-code|claude-desktop|cursor|codex] [--write]`: shows or writes
   the config for each client (absolute command path, `.bak` backup, re-running replaces
