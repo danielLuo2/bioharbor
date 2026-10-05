@@ -56,7 +56,11 @@ the popular ones (it writes an absolute path, so GUI apps find it even outside y
 | Anything else | run `bioharbor serve` (stdio) or `bioharbor serve --http` (Streamable HTTP) |
 
 Long-running tools return a `job_id` within ~20 s instead of blocking, so they stay
-within every client's tool-call timeout. Step-by-step setup (local or on a GPU server,
+within every client's tool-call timeout.
+
+<img src="docs/images/codex-orf-demo.png" alt="Codex chaining BioHarbor's find_orfs and seq_stats tools" width="640">
+
+Step-by-step setup (local or on a GPU server,
 with troubleshooting): [docs/connect-clients.md](docs/connect-clients.md).
 
 Then ask your agent something like:

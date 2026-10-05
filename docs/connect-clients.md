@@ -91,6 +91,10 @@ Then ask the agent, for example:
 Clear errors on a machine without MMseqs2 or a GPU are expected: they show the agent
 gets actionable messages instead of a hang.
 
+A multi-step request works too. Here Codex chains `find_orfs` and `seq_stats` on its own:
+
+![Codex using BioHarbor to find an ORF and report the protein's length and weight](images/codex-orf-demo.png)
+
 ## Troubleshooting
 
 - **Red dot / `spawn bioharbor ENOENT`** (mode A): the client can't find `bioharbor`. Use
