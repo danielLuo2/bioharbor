@@ -113,7 +113,9 @@ def translate_sequence(params: TranslateParams, ctx: RunContext) -> ToolResult:
 
 class FindOrfsParams(BaseModel):
     sequence: str = SEQ_FIELD
-    min_aa: int = Field(50, ge=10, le=10_000, description="Minimum ORF length in amino acids.")
+    min_aa: int = Field(
+        50, ge=1, le=10_000, description="Minimum ORF length in amino acids (1 = any ORF)."
+    )
     both_strands: bool = Field(True, description="Also search the reverse complement.")
     top_n: int = Field(10, ge=1, le=100, description="How many of the longest ORFs to return.")
 
@@ -126,6 +128,7 @@ def find_orfs(params: FindOrfsParams, ctx: RunContext) -> ToolResult:
     and writes all ORFs to a FASTA file."""
     records = parse_sequences(params.sequence)
     orfs = []
+    best_short = None  # longest ORF below min_aa, reported when nothing passes
     inputs = []
     for rec in records:
         require_type(rec, "dna", "rna")
@@ -142,21 +145,24 @@ def find_orfs(params: FindOrfsParams, ctx: RunContext) -> ToolResult:
                         start = i
                     elif start is not None and codon in ("TAA", "TAG", "TGA"):
                         aa_len = (i - start) // 3
-                        if aa_len >= params.min_aa:
+                        keep = aa_len >= params.min_aa
+                        if keep or aa_len > (best_short["length_aa"] if best_short else 0):
                             lo, hi = start + 1, i + 3
                             if strand == -1:
                                 lo, hi = n - hi + 1, n - lo + 1
-                            orfs.append(
-                                {
-                                    "id": rec.id,
-                                    "strand": "+" if strand == 1 else "-",
-                                    "start": lo,
-                                    "end": hi,
-                                    "length_nt": hi - lo + 1,  # includes the stop codon
-                                    "length_aa": aa_len,
-                                    "protein": translate(s[start:i]),
-                                }
-                            )
+                            orf = {
+                                "id": rec.id,
+                                "strand": "+" if strand == 1 else "-",
+                                "start": lo,
+                                "end": hi,
+                                "length_nt": hi - lo + 1,  # includes the stop codon
+                                "length_aa": aa_len,
+                                "protein": translate(s[start:i]),
+                            }
+                            if keep:
+                                orfs.append(orf)
+                            else:
+                                best_short = orf
                         start = None
 
     orfs.sort(key=lambda o: o["length_aa"], reverse=True)
@@ -172,16 +178,23 @@ def find_orfs(params: FindOrfsParams, ctx: RunContext) -> ToolResult:
         {**o, "protein": o["protein"][:120] + ("…" if o["length_aa"] > 120 else "")}
         for o in orfs[: params.top_n]
     ]
+    summary = {"n_orfs": len(orfs), "inputs": inputs[:INLINE_LIMIT], "top": top}
+    message = f"found {len(orfs)} ORF(s) ≥ {params.min_aa} aa"
     suggestions = []
     if orfs:
+        message += f"; longest is {orfs[0]['length_aa']} aa"
         suggestions.append("run search_homologs or predict_structure on the longest ORF protein")
+    elif best_short:
+        # Answer "what is the longest ORF?" without a second call.
+        summary["longest_below_min"] = best_short
+        message += f"; the longest ORF is {best_short['length_aa']} aa (below min_aa)"
+        suggestions.append(f"rerun with min_aa={best_short['length_aa']} to list it as well")
     else:
-        suggestions.append(f"no ORFs ≥ {params.min_aa} aa; try a lower min_aa")
+        suggestions.append("no ATG..stop ORF on any frame; check the sequence and strand")
     return ToolResult(
         # Exact input lengths, so agents quote them instead of estimating.
-        summary={"n_orfs": len(orfs), "inputs": inputs[:INLINE_LIMIT], "top": top},
-        message=f"found {len(orfs)} ORF(s) ≥ {params.min_aa} aa"
-        + (f"; longest is {orfs[0]['length_aa']} aa" if orfs else ""),
+        summary=summary,
+        message=message,
         files=[str(path)],
         suggestions=suggestions,
     )

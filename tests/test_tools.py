@@ -64,6 +64,23 @@ def test_find_orfs_both_strands(harbor):
     assert res["summary"]["inputs"] == [{"id": "seq1", "length_nt": len(seq)}]
 
 
+def test_find_orfs_reports_longest_orf_below_min_aa(harbor):
+    # 35-aa ubiquitin fragment: below the default min_aa of 50.
+    seq = (
+        "ATGCAGATCTTCGTGAAGACCCTGACCGGCAAGACCATCACCCTGGAGGTGGAGCCCAGCGAC"
+        "ACCATCGAGAACGTGAAGGCCAAGATCCAGGACAAGGAGGGCTAA"
+    )
+    res = ok(harbor.run("find_orfs", {"sequence": seq}))
+    assert res["summary"]["n_orfs"] == 0
+    best = res["summary"]["longest_below_min"]
+    assert (best["start"], best["end"], best["length_aa"]) == (1, 108, 35)
+    assert "rerun with min_aa=35" in res["suggestions"][0]
+
+    any_orf = ok(harbor.run("find_orfs", {"sequence": seq, "min_aa": 1}))
+    assert any_orf["summary"]["top"][0]["length_aa"] == 35
+    assert "longest_below_min" not in any_orf["summary"]
+
+
 def test_runs_are_recorded_with_provenance(harbor):
     out = harbor.run("seq_stats", {"sequence": "ACGT"})
     job = harbor.store.get(out["job_id"])

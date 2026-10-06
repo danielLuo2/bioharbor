@@ -5,6 +5,17 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-10-06
+
+### Changed
+- `find_orfs` accepts `min_aa` down to 1 (was 10), so "find the longest ORF" works on
+  short sequences without a validation error.
+
+### Added
+- When no ORF reaches `min_aa`, `find_orfs` still reports the longest one
+  (`summary.longest_below_min`) and suggests the `min_aa` that would list it, so agents
+  answer in one call instead of retrying.
+
 ## [0.1.2] - 2026-10-05
 
 ### Added
