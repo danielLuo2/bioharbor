@@ -73,6 +73,11 @@ Then configure the client exactly as in mode B (`http://127.0.0.1:8765/mcp`). Re
 through SSH to the server, so `predict_structure` runs on the server's GPUs and
 `search_homologs` uses its databases.
 
+## Biomni
+
+To use BioHarbor as the compute backend of the [Biomni](https://github.com/snap-stanford/Biomni)
+agent, see [use-with-biomni.md](use-with-biomni.md).
+
 ## Check that it works
 
 The client should list **bioharbor** as connected with **12 tools**:

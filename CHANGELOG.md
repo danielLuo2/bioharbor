@@ -5,6 +5,11 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `docs/use-with-biomni.md`: using BioHarbor as the compute backend of the Biomni agent,
+  locally or on a GPU server, and what works before and after
+  [snap-stanford/Biomni#357](https://github.com/snap-stanford/Biomni/pull/357).
+
 ## [0.1.4] - 2026-10-07
 
 ### Added

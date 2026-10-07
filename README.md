@@ -55,6 +55,7 @@ the popular ones (it writes an absolute path, so GUI apps find it even outside y
 | **Claude Desktop** | `bioharbor install claude-desktop --write`, then restart the app |
 | **Cursor** | `bioharbor install cursor --write`, or [![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=bioharbor&config=eyJjb21tYW5kIjogImJpb2hhcmJvciIsICJhcmdzIjogWyJzZXJ2ZSJdfQ==) |
 | **Codex** (CLI, IDE extension, app) | `codex mcp add bioharbor -- bioharbor serve`, or `bioharbor install codex --write` |
+| **Biomni** (Stanford's biomedical agent) | `agent.add_mcp(...)`; see [docs/use-with-biomni.md](docs/use-with-biomni.md) |
 | Anything else | run `bioharbor serve` (stdio) or `bioharbor serve --http` (Streamable HTTP) |
 
 Long-running tools return a `job_id` within ~20 s instead of blocking, so they stay
