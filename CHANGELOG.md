@@ -5,6 +5,13 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-10-07
+
+### Added
+- `server.json` and an `mcp-name` marker in the README, for listing BioHarbor in the
+  official MCP Registry as `io.github.danielLuo2/bioharbor`.
+- `docs/connect-clients.md`: Claude Desktop screenshot next to the Codex example.
+
 ## [0.1.3] - 2026-10-06
 
 ### Changed

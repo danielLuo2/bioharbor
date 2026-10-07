@@ -14,6 +14,8 @@ Claude, Cursor and Codex *execute* bioinformatics tools — not just look things
 ask for an analysis; BioHarbor validates the input, schedules it on a GPU with room, records
 exactly how it ran, and hands back a compact, agent-readable summary.
 
+<!-- mcp-name: io.github.danielLuo2/bioharbor -->
+
 ![BioHarbor demo](docs/demo/demo.gif)
 
 ## Why another bio MCP server?

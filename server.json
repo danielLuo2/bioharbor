@@ -1,0 +1,27 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.danielLuo2/bioharbor",
+  "title": "BioHarbor",
+  "description": "Run real bioinformatics from your AI agent. Reliable, reproducible, on your own GPUs.",
+  "repository": {
+    "url": "https://github.com/danielLuo2/bioharbor",
+    "source": "github"
+  },
+  "version": "0.1.4",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "bioharbor",
+      "version": "0.1.4",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "serve"
+        }
+      ]
+    }
+  ]
+}
