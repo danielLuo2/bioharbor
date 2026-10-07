@@ -96,6 +96,10 @@ A multi-step request works too. Here Codex plans the steps, chains BioHarbor's
 
 ![Codex chaining BioHarbor's find_orfs and seq_stats tools on a DNA sequence](images/codex-orf-demo.png)
 
+The same request in Claude Desktop; every number in the answer comes from a tool result:
+
+![Claude Desktop answering with BioHarbor's find_orfs, translate_sequence and seq_stats](images/claude-desktop-orf-demo.png)
+
 ## Troubleshooting
 
 - **Claude Desktop on Windows doesn't show BioHarbor:** the Microsoft Store build reads
