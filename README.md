@@ -5,6 +5,7 @@
 [![CI](https://github.com/danielLuo2/bioharbor/actions/workflows/ci.yml/badge.svg)](https://github.com/danielLuo2/bioharbor/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/bioharbor)](https://pypi.org/project/bioharbor/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![BioHarbor MCP server – quality and maintenance score on Glama](https://glama.ai/mcp/servers/danielLuo2/bioharbor/badges/score.svg)](https://glama.ai/mcp/servers/danielLuo2/bioharbor)
 
 > 🧪 **Alpha (v0.1).** Sequence tools, homology search (MMseqs2) and structure prediction
 > (ESMFold, validated on RTX 5090) work. Feedback welcome — see the [roadmap](ROADMAP.md).
