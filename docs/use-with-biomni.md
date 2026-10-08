@@ -66,7 +66,8 @@ The ESMFold model then stays loaded on the server between calls and across Biomn
 from biomni.agent import A1
 
 agent = A1(path="./data")
-agent.add_mcp(config_path="bioharbor_mcp.yaml")   # prints "Discovered 12 tools from bioharbor MCP server"
+# prints "Discovered 12 tools from bioharbor MCP server"
+agent.add_mcp(config_path="bioharbor_mcp.yaml")
 
 agent.go(
     "Find the longest ORF in contig.fa, search Swiss-Prot for homologs of its protein "
