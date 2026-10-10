@@ -122,10 +122,13 @@ class FindOrfsParams(BaseModel):
 
 @tool(version="1")
 def find_orfs(params: FindOrfsParams, ctx: RunContext) -> ToolResult:
-    """Find open reading frames (ATG to stop) on both strands.
+    """Find open reading frames (ATG to stop codon) in DNA or RNA sequences.
 
-    Returns the longest ORFs in DNA/RNA with coordinates (1-based, on the forward strand)
-    and writes all ORFs to a FASTA file."""
+    Scans all three frames, on both strands unless both_strands is false, with the standard
+    genetic code. Returns the top_n longest ORFs (strand, 1-based start/end on the forward
+    strand, length_nt, length_aa, protein) and the exact input lengths; all ORFs are written
+    to orfs.faa. If no ORF reaches min_aa, the longest shorter one is reported as
+    longest_below_min. Protein input is rejected; use translate_sequence for a fixed frame."""
     records = parse_sequences(params.sequence)
     orfs = []
     best_short = None  # longest ORF below min_aa, reported when nothing passes

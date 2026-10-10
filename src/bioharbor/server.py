@@ -66,13 +66,27 @@ def build_server(harbor: Harbor) -> MCPServer:
 
     @server.tool()
     async def get_job(
-        job_id: Annotated[str, Field(description="Job id returned by a slow tool.")],
+        job_id: Annotated[
+            str, Field(description="The `job_id` returned by a slow tool or listed by list_jobs.")
+        ],
         wait_seconds: Annotated[
             # Capped below the ~30 s tool-call timeout some clients (e.g. Cursor) enforce.
-            float, Field(ge=0, le=25, description="Block up to this long for the job to finish.")
+            float,
+            Field(
+                ge=0,
+                le=25,
+                description="Seconds to wait for the job to finish before returning (0 = "
+                "return the current status immediately).",
+            ),
         ] = 0,
     ) -> dict[str, Any]:
-        """Status and (when finished) result of a background job."""
+        """Check a background job and get its result once it has finished.
+
+        Use this after a slow tool (e.g. predict_structure, search_homologs) returned a
+        `job_id` instead of a result. Returns `status` (queued, waiting_gpu, running,
+        succeeded, failed, cancelled), plus `result` when succeeded or `error` when failed.
+        If it is still running, call again later, or pass wait_seconds to block briefly.
+        Read-only: checking a job does not change it."""
         job = await anyio.to_thread.run_sync(harbor.runner.wait, job_id, wait_seconds or 0.001)
         if job is None:
             return {"error": "NotFound", "message": f"no job {job_id!r}"}
@@ -80,19 +94,38 @@ def build_server(harbor: Harbor) -> MCPServer:
 
     @server.tool()
     def list_jobs(
-        limit: Annotated[int, Field(ge=1, le=100)] = 10,
+        limit: Annotated[
+            int, Field(ge=1, le=100, description="Maximum number of jobs to return.")
+        ] = 10,
         status: Annotated[
             str | None,
-            Field(description="Filter: queued, waiting_gpu, running, succeeded, failed, cancelled"),
+            Field(
+                description="Only return jobs in this state: queued, waiting_gpu, running, "
+                "succeeded, failed or cancelled. Omit for all states."
+            ),
         ] = None,
     ) -> dict[str, Any]:
-        """Recent jobs, newest first (results omitted; use get_job for details)."""
+        """List recent background jobs, newest first.
+
+        Use this to find a `job_id` you no longer have, or to see what is queued or running.
+        Each entry has job_id, tool, status, gpu and duration_s; results are omitted, so call
+        get_job for a job's result. Read-only."""
         jobs = harbor.store.list(limit=limit, status=status)
         return {"jobs": [{k: v for k, v in j.to_dict().items() if k != "result"} for j in jobs]}
 
     @server.tool()
-    def cancel_job(job_id: str) -> dict[str, Any]:
-        """Cancel a job that is still queued or waiting for a GPU."""
+    def cancel_job(
+        job_id: Annotated[
+            str,
+            Field(description="The `job_id` of the job to cancel (from a slow tool or list_jobs)."),
+        ],
+    ) -> dict[str, Any]:
+        """Cancel a background job that has not started running yet.
+
+        Only jobs whose status is queued or waiting_gpu can be cancelled; a job that is
+        already running is not interrupted and will still finish. Returns `cancelled: true`
+        on success, or `cancelled: false` with a `message` if the job does not exist or has
+        already started or finished. Use list_jobs to see job states first."""
         ok = harbor.runner.cancel(job_id)
         return {
             "job_id": job_id,
@@ -101,8 +134,21 @@ def build_server(harbor: Harbor) -> MCPServer:
         }
 
     @server.tool()
-    def describe_tool(name: str) -> dict[str, Any]:
-        """Full input schema, version and resource needs of a BioHarbor tool."""
+    def describe_tool(
+        name: Annotated[
+            str,
+            Field(
+                description="Name of an analysis tool: seq_stats, translate_sequence, "
+                "find_orfs, search_homologs or predict_structure."
+            ),
+        ],
+    ) -> dict[str, Any]:
+        """Explain how an analysis tool runs before calling it.
+
+        Returns the tool's description, version, full JSON input schema (parameter types,
+        defaults and limits), whether it needs a GPU, and whether it runs inline or as a
+        background job. Use it when unsure about a parameter or after an invalid-parameters
+        error. Read-only; returns a NotFound error for unknown names."""
         try:
             return harbor.describe(name)
         except KeyError as exc:
@@ -110,7 +156,13 @@ def build_server(harbor: Harbor) -> MCPServer:
 
     @server.tool()
     def list_databases() -> dict[str, Any]:
-        """Sequence databases installed for search_homologs, and ones that can be added."""
+        """List the sequence databases that search_homologs can search.
+
+        Call this before search_homologs to pick a `database` value. Returns `installed`
+        (name, source and sequence count of each ready database) and `available_to_install`
+        (known databases such as swissprot, pdb and uniref50 that are not installed yet).
+        Agents cannot install databases; ask the user to run `bioharbor setup-db <name>`.
+        Read-only."""
         installed = [d.to_dict() for d in databases.list_databases(harbor.home)]
         return {
             "installed": installed,
@@ -124,7 +176,12 @@ def build_server(harbor: Harbor) -> MCPServer:
 
     @server.tool()
     def gpu_status() -> dict[str, Any]:
-        """Live GPU memory and utilisation (includes other users' processes)."""
+        """Show live GPU memory and utilisation on this machine.
+
+        Returns, per NVIDIA GPU, its index, name, total and free memory (GB) and utilisation
+        (%), counting other users' processes too. Use it to explain why a GPU job is in
+        waiting_gpu, or to check capacity before a large predict_structure run. You do not
+        need it to schedule jobs: BioHarbor picks a GPU itself. Read-only."""
         gpus = gpu_mod.probe()
         return {
             "gpus": [g.to_dict() for g in gpus],
@@ -133,10 +190,25 @@ def build_server(harbor: Harbor) -> MCPServer:
 
     @server.tool()
     def read_file(
-        path: Annotated[str, Field(description="A path from a tool result's `files` list.")],
-        max_bytes: Annotated[int, Field(ge=1, le=READ_LIMIT)] = 20_000,
+        path: Annotated[
+            str,
+            Field(description="A path exactly as listed in a tool result's `files` list."),
+        ],
+        max_bytes: Annotated[
+            int,
+            Field(
+                ge=1,
+                le=READ_LIMIT,
+                description="Return at most this many bytes from the start of the file.",
+            ),
+        ] = 20_000,
     ) -> dict[str, Any]:
-        """Read (the start of) a text output file produced by a BioHarbor tool."""
+        """Read a text output file written by a BioHarbor tool.
+
+        Tool results are compact summaries; use this only when you need the full output,
+        e.g. all ORFs in orfs.faa or all hits of a homology search. Returns `content`, the
+        file's `size_bytes`, and `truncated: true` if the file is longer than max_bytes.
+        Only files inside the BioHarbor workspace can be read. Read-only."""
         try:
             p = harbor.resolve_file(path)
         except BioHarborError as exc:
