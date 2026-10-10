@@ -5,10 +5,35 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-10-10
+
+### Fixed
+- The ESMFold memory estimate was too low from ~400 aa up (by 3.4 GB at 600 aa and
+  8 GB at 1500 aa), so a fold could be placed on a GPU without enough room. It is now
+  fitted on RTX 5090 measurements of the whole process as nvidia-smi sees it, and sits
+  0.5–0.8 GB above every measured peak from 50 to 1500 aa.
+- A model already loaded on a GPU was counted twice when placing the next job there, so
+  long sequences avoided that GPU and loaded a second copy elsewhere. The scheduler now
+  credits back memory a tool already holds on a GPU (`Resources.gpu_mem_held`).
+
+### Changed
+- `serve` hands cached GPU memory back after every fold, so an idle server holds the
+  model (~8.5 GB) instead of its largest job's peak (27.6 GB after a 1500-aa fold).
+- ESMFold always uses trunk chunking: no measurable slowdown, and lower peaks from
+  500 aa up (600 aa: 17.4 → 13.0 GB).
+- On Linux, BioHarbor sets `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` unless you
+  set it yourself; it lowers peaks by ~4 GB at 1000–1500 aa, so 1500 aa fits a 32 GB GPU
+  with room to spare.
+- Clearer tool and parameter descriptions for agents (when to use each tool, what it
+  returns, side effects).
+- `provenance.json` also records `gpu_peak_reserved_gb` (PyTorch's cache included).
+
 ### Added
 - `docs/use-with-biomni.md`: using BioHarbor as the compute backend of the Biomni agent,
   locally or on a GPU server, and what works before and after
   [snap-stanford/Biomni#357](https://github.com/snap-stanford/Biomni/pull/357).
+- Glama score badge in the README.
+- `docs/gpu-setup.md`: measured ESMFold memory and time per length on an RTX 5090.
 
 ## [0.1.4] - 2026-10-07
 

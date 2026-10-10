@@ -53,10 +53,34 @@ While a labmate's job occupies one GPU, run the smoke test again and confirm:
 
 If neither GPU has room, the job shows `waiting_gpu` and starts once memory frees up.
 
-## 4. Calibrate the memory estimate
+## 4. GPU memory per sequence length
 
-Each run's `provenance.json` records `gpu_mem_estimate_gb` (what the scheduler reserved)
-and `gpu_peak_mem_gb` (what PyTorch actually allocated). Fold a few lengths and compare:
+Measured on an RTX 5090 (torch 2.11 + CUDA 12.8, transformers 5.18) with BioHarbor's
+settings: fp16 language model, trunk chunking, `expandable_segments`. "Peak" is the
+whole process as `nvidia-smi` shows it (weights, CUDA context and PyTorch's cache),
+which is what the GPU must have free. Times exclude the one-time model load (~155 s).
+
+| Length (aa) | Peak (GB) | Estimate (GB) | Inference (s) |
+|---:|---:|---:|---:|
+| 50 | 8.5 | 9.0 | 0.6 |
+| 300 | 9.2 | 9.7 | 2.1 |
+| 500 | 10.6 | 11.1 | 8.1 |
+| 800 | 13.7 | 14.2 | 27.3 |
+| 1000 | 16.6 | 17.2 | 52.2 |
+| 1200 | 20.1 | 20.8 | 86.9 |
+| 1500 | 26.6 | 27.4 | 175.6 |
+
+- Peaks follow 8.5 + 8.1·(L/1000)² GB; the scheduler's estimate
+  (`estimate_gpu_gb` in `tools/structure.py`) adds ~0.5 GB, plus 1 GB headroom per GPU.
+- `num_recycles` changes time, not memory: 1000 aa with 12 recycles peaks at the same
+  memory as with 4 and takes ~3× longer.
+- Once loaded, the model keeps ~8.5 GB on its GPU between jobs; later jobs on that GPU
+  only need the activation part. BioHarbor empties PyTorch's cache after every fold.
+- Without chunking and `expandable_segments`, 600 aa peaked at 17.4 GB and 1500 aa at
+  30.7 GB — barely inside a 32 GB card.
+
+To check your own hardware, compare `gpu_mem_estimate_gb` with `gpu_peak_reserved_gb`
+(+~0.6 GB CUDA context) in each run's `provenance.json`:
 
 ```bash
 for n in 100 300 600 1000; do
@@ -65,9 +89,7 @@ done
 grep -h '"gpu_' ~/.bioharbor/jobs/*/provenance.json
 ```
 
-If the estimate is far above the peak, BioHarbor is leaving GPU memory unused; if it is
-below, jobs risk OOM. Please share the numbers in an issue so the default
-(`estimate_gpu_gb` in `tools/structure.py`) can be tuned for everyone.
+If the estimate is below the peak, jobs risk OOM; please share the numbers in an issue.
 
 ## 5. Homology search
 

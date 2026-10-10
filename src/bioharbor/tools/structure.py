@@ -24,7 +24,12 @@ from ..seqio import Record, parse_sequences, require_type
 MODEL_ID = "facebook/esmfold_v1"
 MAX_LENGTH = 1500
 MAX_RECORDS = 20
-CHUNK_FROM = 600  # use trunk chunking above this length to bound activation memory
+# Trunk chunking costs no measurable time on an RTX 5090 at any length and cuts peak
+# memory from 500 aa up (600 aa: 17.4 -> 13.0 GB), so it is always on.
+CHUNK_SIZE = 64
+# GPU memory a loaded model keeps between jobs (weights + CUDA context, after the cache
+# is emptied), as nvidia-smi reports it. Jobs on that GPU reuse it.
+MODEL_GB = 8.5
 
 
 class PredictStructureParams(BaseModel):
@@ -44,10 +49,10 @@ def _max_len(params: BaseModel) -> int:
 
 
 def estimate_gpu_gb(length: int) -> float:
-    """Heuristic VRAM need: weights (fp16 language model + fp32 trunk) plus pair
-    activations growing ~L². Calibrate against `gpu_peak_mem_gb` in provenance."""
-    chunked = length > CHUNK_FROM
-    return round(9.0 + (6.0 if chunked else 14.0) * (length / 1000) ** 2, 1)
+    """GPU memory one fold needs, as nvidia-smi counts it: the loaded model plus pair
+    activations growing ~L². Fitted on an RTX 5090 (peaks 8.5 + 8.1·(L/1000)² GB from
+    50 to 1500 aa, see docs/gpu-setup.md) with ~0.5 GB margin."""
+    return round(MODEL_GB + 0.5 + 8.2 * (length / 1000) ** 2, 1)
 
 
 # --- model backend -------------------------------------------------------------------
@@ -119,14 +124,18 @@ def esmfold_backend(sequence: str, device: str, num_recycles: int) -> tuple[str,
         # One inference at a time per model: recycles/chunking are model-level settings.
         with _infer_locks.setdefault(device, threading.Lock()), torch.no_grad():
             model.trunk.config.max_recycles = num_recycles  # `infer` cannot pass it through
-            model.trunk.set_chunk_size(64 if len(sequence) > CHUNK_FROM else None)
+            model.trunk.set_chunk_size(CHUNK_SIZE)
             out = model.infer(sequence)
     except torch.cuda.OutOfMemoryError as exc:
-        torch.cuda.empty_cache()
         raise ResourceUnavailableError(
             f"GPU out of memory folding {len(sequence)} residues",
             hint="retry later when the GPU is less busy, or fold domains separately",
         ) from exc
+    finally:
+        # Hand cached activation memory back to the GPU: an idle `serve` would otherwise
+        # keep its largest job's peak (27.6 GB after a 1500-aa fold instead of 8.5 GB).
+        if device.startswith("cuda"):
+            torch.cuda.empty_cache()
     ptm = float(out["ptm"].reshape(-1)[0]) if out.get("ptm") is not None else None
     return model.output_to_pdb(out)[0], ptm
 
@@ -213,12 +222,19 @@ def _precheck(params: PredictStructureParams, home: Path) -> None:
     _check(params)
 
 
+def _held_gb(gpu_index: int) -> float:
+    return MODEL_GB if f"cuda:{gpu_index}" in _models else 0.0
+
+
 @tool(
     version="1",
     slow=True,
     precheck=_precheck,
     resources=Resources(
-        gpu=True, gpu_mem_gb=lambda p: estimate_gpu_gb(_max_len(p)), timeout_s=2 * 3600
+        gpu=True,
+        gpu_mem_gb=lambda p: estimate_gpu_gb(_max_len(p)),
+        gpu_mem_held=_held_gb,
+        timeout_s=2 * 3600,
     ),
 )
 def predict_structure(params: PredictStructureParams, ctx: RunContext) -> ToolResult:
@@ -287,8 +303,10 @@ def _peak_memory(device: str) -> dict[str, Any]:
     try:
         import torch
 
-        peak = torch.cuda.max_memory_allocated(device) / 2**30
+        allocated = torch.cuda.max_memory_allocated(device) / 2**30
+        # Reserved includes PyTorch's cache; nvidia-smi shows ~0.6 GB more (CUDA context).
+        reserved = torch.cuda.max_memory_reserved(device) / 2**30
         torch.cuda.reset_peak_memory_stats(device)
-        return {"gpu_peak_mem_gb": round(peak, 2)}
+        return {"gpu_peak_mem_gb": round(allocated, 2), "gpu_peak_reserved_gb": round(reserved, 2)}
     except Exception:
         return {}

@@ -51,6 +51,21 @@ def test_gpu_estimate_grows_with_length():
     assert estimate_gpu_gb(100) < estimate_gpu_gb(500) < estimate_gpu_gb(1500) < 32
 
 
+# nvidia-smi process peaks (GB) measured on an RTX 5090, see docs/gpu-setup.md.
+MEASURED_PEAK_GB = {50: 8.51, 300: 9.23, 500: 10.57, 800: 13.68, 1000: 16.6, 1500: 26.6}
+
+
+@pytest.mark.parametrize("length,peak", MEASURED_PEAK_GB.items())
+def test_gpu_estimate_covers_measured_peaks(length, peak):
+    assert peak < estimate_gpu_gb(length) < peak + 1.5
+
+
+def test_loaded_model_memory_is_credited_on_its_gpu(monkeypatch):
+    monkeypatch.setattr(structure, "_models", {"cuda:1": object()})
+    assert structure._held_gb(1) == structure.MODEL_GB
+    assert structure._held_gb(0) == 0.0
+
+
 @pytest.fixture
 def gpu_harbor(tmp_path, monkeypatch):
     calls = []

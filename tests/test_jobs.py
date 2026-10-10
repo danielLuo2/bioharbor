@@ -58,6 +58,32 @@ def test_reservations_prevent_overbooking(tmp_path):
         h.close()
 
 
+@tool(
+    "_test_warm_gpu_job",
+    resources=Resources(gpu=True, gpu_mem_gb=20, gpu_mem_held=lambda i: 9.0 if i == 1 else 0.0),
+    slow=True,
+)
+def _test_warm_gpu_job(params: GpuParams, ctx: RunContext) -> ToolResult:
+    release.wait(5)
+    return ToolResult(summary={"gpu": ctx.gpu_index})
+
+
+def test_memory_held_by_a_loaded_model_is_credited(tmp_path):
+    """GPU 1 already holds the 9 GB model: a 20 GB job needs only 11 GB more there."""
+    release.clear()
+    h = make(tmp_path, [GPUInfo(0, "g", 32, 15, 0), GPUInfo(1, "g", 32, 14, 0)])
+    try:
+        a = h.run("_test_warm_gpu_job", {}, wait_s=0.1)
+        assert a["status"] == "running"
+        assert h.runner._reservations._reserved == {1: 11.0}
+        release.set()
+        assert h.runner.wait(a["job_id"], 5).result["summary"] == {"gpu": 1}
+        assert h.runner._reservations._reserved == {1: 0.0}
+    finally:
+        release.set()
+        h.close()
+
+
 def test_no_gpu_fails_with_message(tmp_path):
     h = make(tmp_path, [])
     try:

@@ -36,9 +36,15 @@ class Resources:
     gpu: bool = False
     gpu_mem_gb: float | Callable[[BaseModel], float] = 0.0
     timeout_s: float = 3600.0
+    # GB this process already holds on a GPU index and the job reuses (e.g. loaded weights).
+    # nvidia-smi counts it as used, so the scheduler credits it back on that GPU.
+    gpu_mem_held: Callable[[int], float] | None = None
 
     def gpu_mem_for(self, params: BaseModel) -> float:
         return self.gpu_mem_gb(params) if callable(self.gpu_mem_gb) else self.gpu_mem_gb
+
+    def gpu_mem_held_on(self, index: int) -> float:
+        return self.gpu_mem_held(index) if self.gpu_mem_held else 0.0
 
 
 @dataclass

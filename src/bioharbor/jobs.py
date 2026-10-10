@@ -169,15 +169,21 @@ class GPUReservations:
         self._reserved: dict[int, float] = {}
 
     def try_reserve(
-        self, gpus: list[gpu_mod.GPUInfo], need_gb: float, **pick_kwargs: Any
-    ) -> int | None:
+        self,
+        gpus: list[gpu_mod.GPUInfo],
+        need_gb: float,
+        held: Callable[[int], float] = lambda index: 0.0,
+        **pick_kwargs: Any,
+    ) -> tuple[int, float] | None:
+        """Returns (gpu index, GB reserved). `held(index)` is memory our process already
+        holds there and the job reuses, so only `need_gb - held` is newly reserved."""
         with self._lock:
             adjusted = [
                 gpu_mod.GPUInfo(
                     g.index,
                     g.name,
                     g.mem_total_gb,
-                    g.mem_free_gb - self._reserved.get(g.index, 0.0),
+                    g.mem_free_gb - self._reserved.get(g.index, 0.0) + held(g.index),
                     g.util_pct,
                 )
                 for g in gpus
@@ -185,8 +191,9 @@ class GPUReservations:
             chosen = gpu_mod.pick_gpu(adjusted, need_gb, **pick_kwargs)
             if chosen is None:
                 return None
-            self._reserved[chosen.index] = self._reserved.get(chosen.index, 0.0) + need_gb
-            return chosen.index
+            amount = max(0.0, need_gb - held(chosen.index))
+            self._reserved[chosen.index] = self._reserved.get(chosen.index, 0.0) + amount
+            return chosen.index, amount
 
     def release(self, index: int, need_gb: float) -> None:
         with self._lock:
@@ -272,16 +279,18 @@ class JobRunner:
         with self._lock:
             return job_id in self._cancelled
 
-    def _acquire_gpu(self, job_id: str, need_gb: float) -> int | None:
+    def _acquire_gpu(
+        self, job_id: str, need_gb: float, held: Callable[[int], float]
+    ) -> tuple[int, float] | None:
         deadline = time.monotonic() + self._gpu_wait_timeout
         waiting = False
         while not self._is_cancelled(job_id):
             gpus = self._probe()
             if not gpus:
                 raise RuntimeError("no NVIDIA GPU visible (run `bioharbor doctor`)")
-            idx = self._reservations.try_reserve(gpus, need_gb, **self._pick_kwargs)
-            if idx is not None:
-                return idx
+            got = self._reservations.try_reserve(gpus, need_gb, held, **self._pick_kwargs)
+            if got is not None:
+                return got
             if not waiting:
                 self.store.update(job_id, status=WAITING_GPU)
                 waiting = True
@@ -298,14 +307,16 @@ class JobRunner:
             if self._is_cancelled(job_id):
                 self._finish(job_id, status=CANCELLED)
                 continue
-            gpu_index, need_gb = None, 0.0
+            gpu_index, reserved_gb = None, 0.0
             try:
                 if spec.resources.gpu:
-                    need_gb = spec.resources.gpu_mem_for(params)
-                    gpu_index = self._acquire_gpu(job_id, need_gb)
-                    if gpu_index is None:
+                    got = self._acquire_gpu(
+                        job_id, spec.resources.gpu_mem_for(params), spec.resources.gpu_mem_held_on
+                    )
+                    if got is None:
                         self._finish(job_id, status=CANCELLED)
                         continue
+                    gpu_index, reserved_gb = got
                 self.store.update(job_id, status=RUNNING, started=time.time(), gpu=gpu_index)
                 result = self._execute(spec, params, job_id, gpu_index)
                 self._finish(job_id, status=SUCCEEDED, result=result)
@@ -323,4 +334,4 @@ class JobRunner:
                 self._finish(job_id, status=FAILED, error=err)
             finally:
                 if gpu_index is not None:
-                    self._reservations.release(gpu_index, need_gb)
+                    self._reservations.release(gpu_index, reserved_gb)

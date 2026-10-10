@@ -14,7 +14,7 @@ Priorities follow user feedback — open an issue if something matters to you.
 - [x] `predict_structure` (ESMFold) with length-based GPU memory estimate
 - [x] Fail-fast prechecks before queueing
 - [x] Validate ESMFold on RTX 5090 (smoke test, GPU placement, Swiss-Prot search)
-- [ ] Calibrate the ESMFold memory estimate across lengths (needs a free 5090)
+- [x] Calibrate the ESMFold memory estimate across lengths (RTX 5090, 50–1500 aa)
 - [x] PyPI release via trusted publishing (v0.1.0)
 - [x] Demo GIF in the README (scripted with VHS)
 

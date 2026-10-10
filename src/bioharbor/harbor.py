@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -37,6 +38,10 @@ class Harbor:
         # NVML numbers GPUs by PCI bus; make CUDA (torch) use the same order so the GPU we
         # pick is the GPU the model actually lands on.
         os.environ.setdefault("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
+        if sys.platform.startswith("linux"):
+            # Lets PyTorch grow memory segments instead of caching fixed blocks: measured
+            # ESMFold peaks drop by ~4 GB at 1000-1500 aa (see docs/gpu-setup.md).
+            os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
         self.home = (home or default_home()).resolve()
         self.jobs_dir = self.home / "jobs"
         self.jobs_dir.mkdir(parents=True, exist_ok=True)
