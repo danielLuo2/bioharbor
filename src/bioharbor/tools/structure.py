@@ -126,6 +126,10 @@ def esmfold_backend(sequence: str, device: str, num_recycles: int) -> tuple[str,
             model.trunk.config.max_recycles = num_recycles  # `infer` cannot pass it through
             model.trunk.set_chunk_size(CHUNK_SIZE)
             out = model.infer(sequence)
+            ptm = float(out["ptm"].reshape(-1)[0]) if out.get("ptm") is not None else None
+            pdb = model.output_to_pdb(out)[0]
+            # The outputs include several L×L tensors; drop them before emptying the cache.
+            del out
     except torch.cuda.OutOfMemoryError as exc:
         raise ResourceUnavailableError(
             f"GPU out of memory folding {len(sequence)} residues",
@@ -136,8 +140,7 @@ def esmfold_backend(sequence: str, device: str, num_recycles: int) -> tuple[str,
         # keep its largest job's peak (27.6 GB after a 1500-aa fold instead of 8.5 GB).
         if device.startswith("cuda"):
             torch.cuda.empty_cache()
-    ptm = float(out["ptm"].reshape(-1)[0]) if out.get("ptm") is not None else None
-    return model.output_to_pdb(out)[0], ptm
+    return pdb, ptm
 
 
 backend: Backend = esmfold_backend

@@ -84,6 +84,19 @@ def test_memory_held_by_a_loaded_model_is_credited(tmp_path):
         h.close()
 
 
+def test_gpu_holding_the_model_is_preferred(tmp_path):
+    """GPU 0 has more free memory, but GPU 1 already holds the model: reuse it."""
+    release.clear()
+    h = make(tmp_path, [GPUInfo(0, "g", 32, 31, 0), GPUInfo(1, "g", 32, 21, 0)])
+    try:
+        a = h.run("_test_warm_gpu_job", {}, wait_s=0.1)
+        release.set()
+        assert h.runner.wait(a["job_id"], 5).result["summary"] == {"gpu": 1}
+    finally:
+        release.set()
+        h.close()
+
+
 def test_no_gpu_fails_with_message(tmp_path):
     h = make(tmp_path, [])
     try:

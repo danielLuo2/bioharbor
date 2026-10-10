@@ -188,7 +188,11 @@ class GPUReservations:
                 )
                 for g in gpus
             ]
-            chosen = gpu_mod.pick_gpu(adjusted, need_gb, **pick_kwargs)
+            # Prefer a GPU that already holds what the job reuses (no reload, no second copy).
+            warm = [g for g in adjusted if held(g.index) > 0]
+            chosen = gpu_mod.pick_gpu(warm, need_gb, **pick_kwargs) or gpu_mod.pick_gpu(
+                adjusted, need_gb, **pick_kwargs
+            )
             if chosen is None:
                 return None
             amount = max(0.0, need_gb - held(chosen.index))

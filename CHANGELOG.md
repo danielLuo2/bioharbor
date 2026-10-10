@@ -5,6 +5,16 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-10-10
+
+### Fixed
+- A second fold could still load another copy of ESMFold on a different GPU when that GPU
+  had slightly more free memory. The scheduler now prefers a GPU that already holds what
+  the job reuses, and only falls back to another GPU when the job does not fit there.
+- After a long fold, `serve` kept ~1.3 GB more than the model (1000 aa: 9.8 GB instead of
+  8.5 GB): the cache was emptied while the prediction's L×L output tensors were still
+  alive. They are now released first.
+
 ## [0.1.5] - 2026-10-10
 
 ### Fixed

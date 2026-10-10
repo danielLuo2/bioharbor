@@ -7,12 +7,12 @@
     "url": "https://github.com/danielLuo2/bioharbor",
     "source": "github"
   },
-  "version": "0.1.5",
+  "version": "0.1.6",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "bioharbor",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "transport": {
         "type": "stdio"
       },
